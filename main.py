@@ -20,6 +20,13 @@ from Algorithms import *
 #     value = (6*argument**2 - 10) / 3
 #     return value
 
+def my_function(x, y):
+    return x + y
+
+
+def grad_my_function(x, y):
+    return [x*y, x-y]
+
 
 def graph_intervals(interval_array, function, name, line_count=6):
     increase = 0.1
@@ -113,74 +120,77 @@ if __name__ == '__main__':
 
     print_summary(summary_divide, summary_goldy, summary_newton)
 
-    # # # visualisation
+    args = [10, 5]
+    print(my_function(*args))
 
-    # # plot basic function
-
-    # 1st picture. [-10; 10] and our task at [0; 10]
-    xs = np.arange(-10., 10., 0.05)
-    plt.plot(xs, fx(xs), 'r-', label='f(x)')
-    xs = np.arange(0., 10., 0.05)
-    plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 10]', linewidth=3)
-    plt.title(
-        fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafiškai išskiriant mums svarbią sritį: x ∈ [0; 10]')
-    plt.grid()
-    plt.xlabel('x')
-    plt.ylabel('f(x)')
-    plt.legend()
-    plt.show()
-
-    # 2nd picture. [-5; 5] and [0; 5]
-    xs = np.arange(-5., 5., 0.05)
-    plt.plot(xs, fx(xs), 'r-', label='f(x)')
-    xs = np.arange(0., 5., 0.05)
-    plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 5]')
-    plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [-5; 5]')
-    plt.grid()
-    plt.xlabel('x')
-    plt.ylabel('f(x)')
-    plt.legend()
-    plt.show()
-
-    # 3rd picture. [0; 10]
-    xs = np.arange(0., 10., 0.01)
-    plt.plot(xs, fx(xs), 'b-', label='f(x)')
-    plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [0; 10]')
-    plt.grid()
-    plt.xlabel('x')
-    plt.ylabel('f(x)')
-    plt.legend()
-    plt.show()
-
-    # # plot interval methods
-    graph_intervals(summary_divide.interval_history, fx, summary_divide.name)
-    graph_intervals(summary_goldy.interval_history, fx, summary_goldy.name)
-
-    # # plot scatter type methods
-
-    #  plot basic function
-    xs = np.arange(-0., 6., 0.001)
-    plt.plot(xs, fx(xs), 'r-', label='f(x)')
-
-    # plot summary newton
-    xs = []
-    ys = []
-    counter = 0
-    for k, v in summary_newton.history.items():
-        xs.append(k)
-        ys.append(fx(k))
-        plt.annotate(f'#{counter}', [k, fx(k)])
-        counter += 1
-    plt.scatter(xs, ys, c='m', label='newton')
-    plt.annotate(f'Solution at x = {xs[-1]: <#01.5f}',
-                 xy=(xs[-1], ys[-1]),
-                 xytext=(xs[-1], ys[0]),
-                 arrowprops=dict(
-                     facecolor='black',
-                     shrink=0.05))
-    plt.title(f'{summary_newton.name} in {summary_newton.steps} steps\n(x0 (at #0) is not counted as a step)')
-    plt.grid()
-    plt.xlabel('x')
-    plt.ylabel('f(x)')
-    plt.legend()
-    plt.show()
+    # # # # visualisation
+    #
+    # # # plot basic function
+    #
+    # # 1st picture. [-10; 10] and our task at [0; 10]
+    # xs = np.arange(-10., 10., 0.05)
+    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
+    # xs = np.arange(0., 10., 0.05)
+    # plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 10]', linewidth=3)
+    # plt.title(
+    #     fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafiškai išskiriant mums svarbią sritį: x ∈ [0; 10]')
+    # plt.grid()
+    # plt.xlabel('x')
+    # plt.ylabel('f(x)')
+    # plt.legend()
+    # plt.show()
+    #
+    # # 2nd picture. [-5; 5] and [0; 5]
+    # xs = np.arange(-5., 5., 0.05)
+    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
+    # xs = np.arange(0., 5., 0.05)
+    # plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 5]')
+    # plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [-5; 5]')
+    # plt.grid()
+    # plt.xlabel('x')
+    # plt.ylabel('f(x)')
+    # plt.legend()
+    # plt.show()
+    #
+    # # 3rd picture. [0; 10]
+    # xs = np.arange(0., 10., 0.01)
+    # plt.plot(xs, fx(xs), 'b-', label='f(x)')
+    # plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [0; 10]')
+    # plt.grid()
+    # plt.xlabel('x')
+    # plt.ylabel('f(x)')
+    # plt.legend()
+    # plt.show()
+    #
+    # # # plot interval methods
+    # graph_intervals(summary_divide.interval_history, fx, summary_divide.name)
+    # graph_intervals(summary_goldy.interval_history, fx, summary_goldy.name)
+    #
+    # # # plot scatter type methods
+    #
+    # #  plot basic function
+    # xs = np.arange(-0., 6., 0.001)
+    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
+    #
+    # # plot summary newton
+    # xs = []
+    # ys = []
+    # counter = 0
+    # for k, v in summary_newton.history.items():
+    #     xs.append(k)
+    #     ys.append(fx(k))
+    #     plt.annotate(f'#{counter}', [k, fx(k)])
+    #     counter += 1
+    # plt.scatter(xs, ys, c='m', label='newton')
+    # plt.annotate(f'Solution at x = {xs[-1]: <#01.5f}',
+    #              xy=(xs[-1], ys[-1]),
+    #              xytext=(xs[-1], ys[0]),
+    #              arrowprops=dict(
+    #                  facecolor='black',
+    #                  shrink=0.05))
+    # plt.title(f'{summary_newton.name} in {summary_newton.steps} steps\n(x0 (at #0) is not counted as a step)')
+    # plt.grid()
+    # plt.xlabel('x')
+    # plt.ylabel('f(x)')
+    # plt.legend()
+    # plt.show()
