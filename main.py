@@ -1,3 +1,5 @@
+import sys
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sympy import diff, Symbol, lambdify
@@ -122,6 +124,7 @@ if __name__ == '__main__':
 
     args = [10, 5]
     print(my_function(*args))
+    near_zero = sys.float_info.min * sys.float_info.epsilon
 
     # # # # visualisation
     #

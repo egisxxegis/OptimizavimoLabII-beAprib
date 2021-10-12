@@ -1,6 +1,9 @@
+import copy
+
 from Point import Point
 from ExecutionSummary import ExecutionSummary
 from tabulate import tabulate
+import numpy as np
 
 
 def print_summary(*args):
@@ -133,3 +136,21 @@ def newton(process_function, process_function_derivative, process_function_deriv
     summary.ddfx_times = calls_derivative2
     summary.done = done
     return summary
+
+
+def gradient_descend(process_function, process_function_gradient, x0, gradient_norm_epsilon, gamma_step):
+    x = copy.deepcopy(x0)
+    if isinstance(x, list):
+        x = np.array(x)
+    if not isinstance(x, np.ndarray):
+        raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
+    steps = 0
+    while True:
+        si = process_function_gradient(x)  # n df calls
+        x_next = x - gamma_step * si
+        steps += 1
+        x = x_next.copy()
+        if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
+            # finished
+            break
+    return x, process_function(x), steps
