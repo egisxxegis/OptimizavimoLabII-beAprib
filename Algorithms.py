@@ -146,11 +146,38 @@ def gradient_descend(process_function, process_function_gradient, x0, gradient_n
         raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
     steps = 0
     while True:
+        steps += 1
         si = process_function_gradient(x)  # n df calls
         x_next = x - gamma_step * si
-        steps += 1
         x = x_next.copy()
         if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
             # finished
             break
+        continue
+    return x, process_function(x), steps
+
+
+def the_fastest_descend(process_function, process_function_gradient, x0, gradient_norm_epsilon):
+    x = copy.deepcopy(x0)
+    if isinstance(x, list):
+        x = np.array(x)
+    if not isinstance(x, np.ndarray):
+        raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
+    steps = 0
+
+    while True:
+        steps += 1
+        si = process_function_gradient(x)
+
+        def func_with_step(gamma):
+            return process_function(x.copy() - gamma * si.copy())
+
+        goldy_summary = goldy_cutting(0, 10, func_with_step, 1e-3)
+        gamma_step = goldy_summary.solution
+
+        x = x - gamma_step * si
+
+        if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
+            break
+        continue
     return x, process_function(x), steps
