@@ -22,6 +22,20 @@ from Algorithms import *
 #     value = (6*argument**2 - 10) / 3
 #     return value
 
+def task_requirement(x, y, z):
+    if x + y + z == 1:
+        return True
+    return False
+
+
+def squared_volume_function(x, y, z):
+    return x * y * z
+
+
+def squared_volume_function_reduced(x, y):
+    return x * y * (1 - x - y)
+
+
 def my_function(x, y):
     return x + y
 
