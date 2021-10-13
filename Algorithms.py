@@ -71,7 +71,7 @@ def dividing_into_halves(left_coord, right_coord, process_function, length_bound
         collect_data_from_points(left, right, center, x_left, x_right)
 
 
-def goldy_cutting(left_coord, right_coord, process_function, length_boundary):
+def goldy_cutting(left_coord, right_coord, process_function, length_boundary, step_limit=9999999999):
     left = Point(process_function, left_coord, record_calls=False)
     right = Point(process_function, right_coord, record_calls=False)
     constant = (-1 + 5**0.5)/2
@@ -88,7 +88,7 @@ def goldy_cutting(left_coord, right_coord, process_function, length_boundary):
 
     interval_history = []
     step_count = 0
-    while length >= length_boundary:
+    while length >= length_boundary and step_count < step_limit:
         x_left.calculate()
         x_right.calculate()
 
@@ -172,7 +172,7 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
         def func_with_step(gamma):
             return process_function(x.copy() - gamma * si.copy())
 
-        goldy_summary = goldy_cutting(0, 10, func_with_step, 1e-3)
+        goldy_summary = goldy_cutting(0, 10, func_with_step, length_boundary=1e-3, step_limit=111)
         gamma_step = goldy_summary.solution
 
         x = x - gamma_step * si
