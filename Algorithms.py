@@ -147,7 +147,7 @@ def gradient_descend(process_function, process_function_gradient, x0, gradient_n
     steps = 0
     while True:
         steps += 1
-        si = process_function_gradient(*x)  # n df calls
+        si = process_function_gradient(x)  # n df calls
         x_next = x - gamma_step * si
         x = x_next.copy()
         if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
@@ -167,7 +167,7 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
 
     while True:
         steps += 1
-        si = process_function_gradient(*x)
+        si = process_function_gradient(x)
 
         def func_with_step(gamma):
             return process_function(*(x.copy() - gamma * si.copy()))
