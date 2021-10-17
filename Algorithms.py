@@ -181,3 +181,102 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
             break
         continue
     return x, process_function(*x), steps
+
+
+def deformed_simplex(process_function, x0, start_length, stop_length,
+                     extend_coef=2, normal_contract_coef=0.5, big_contract_coef=-0.5, step_limit=1111):
+    # form a simplex figure
+    x = copy.deepcopy(x0)
+    if isinstance(x, list):
+        x = np.array(x)
+    if not isinstance(x, np.ndarray):
+        raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
+
+    n = len(x0)  # number of axis (x, y) = 2
+    vertices_c = n + 1  # number of vertices: triangle for 2 axis
+    x_high_i = 0
+    x_g_i = 0
+    x_low_i = 0
+
+    vertices = [np.zeros(n) for i in range(vertices_c)]
+    values = [i for i in range(vertices_c)]
+    needs_recalculate = np.zeros(vertices_c) == 0
+    used_vertices = {}
+
+    def _get_xcenter(regarding_vertice_i):
+        the_center = np.zeros(n)
+        for i in range(vertices_c):
+            if i == regarding_vertice_i:
+                continue
+            the_center += vertices[i]
+        return the_center / n
+
+    # locate vertices
+    delta1 = ((n + 1) ** 0.5 + n - 1) / (n * 2 ** 0.5) * start_length
+    delta2 = ((n + 1) ** 0.5 - 1) / (n * 2 ** 0.5) * start_length
+    for vertice_i in range(n):
+        for axis_i in range(n):
+            delta = delta1 if vertice_i != axis_i else delta2
+            vertices[vertice_i][axis_i] = x[axis_i] + delta
+    vertices[vertices_c - 1] = x  # x0 is also a vertice
+
+    def _calculate_values():
+        for i in range(vertices_c):
+            if needs_recalculate[i]:
+                values[i] = process_function(*vertices[i])
+                needs_recalculate[i] = False
+            identifier = ['z'.join(*vertices[i])]
+            used_vertices[identifier] = True
+
+    def _get_high_low_g():
+        the_max = (values[0], 0)
+        the_min = the_max
+        the_2nd_high = the_max
+        for i in range(vertices_c):
+            if values[i] > the_max[0]:
+                the_2nd_high = the_max
+                the_max = (values[i], i)
+            elif values[i] <= the_min[0]:
+                the_min = (values[i], i)
+            elif values[i] > the_2nd_high[0]:
+                the_2nd_high = (values[i], i)
+
+        if the_max[1] == the_2nd_high[1] or the_min[1] == the_max[1]:
+            raise NotImplementedError("xh, xg, xl had a collision")
+        return the_max[1], the_2nd_high[1], the_min[1]
+
+    def _get_x_new(the_x_center):
+        x_high = vertices[x_high_i]
+        x_direction_to_center = the_x_center - x_high
+        x_temp = x_high + x_direction_to_center
+        x_temp_value = process_function(*x_temp)
+
+        # extend, reduce, negative reduce
+        multiplier = 1
+        if values[x_low_i] < x_temp_value < values[x_g_i]:
+            multiplier = 1
+        elif x_temp_value < values[x_low_i]:
+            multiplier = extend_coef
+        elif x_temp_value > values[x_high_i]:
+            multiplier = big_contract_coef
+        elif values[x_g_i] < x_temp_value < values[x_high_i]:
+            multiplier = normal_contract_coef
+
+        x_new = x_high + multiplier * x_direction_to_center
+        value = x_temp_value if multiplier == 1 else process_function(*x_new)
+
+        # if multiplier == 1, calls = 1 ; else calls = 2
+        return x_new, value
+
+    # let us iterate
+    _calculate_values()
+    x_high_i, x_g_i, x_low_i = _get_high_low_g()
+    steps = 0
+    while True:
+        steps += 1
+        x_center = _get_xcenter(x_high_i)
+        vertices[x_high_i], values[x_high_i] = _get_x_new(x_center)
+        x_high_i, x_g_i, x_low_i = _get_high_low_g()
+        if np.linalg.norm(vertices[x_high_i] - vertices[x_low_i], ord=None) < stop_length \
+                or steps >= step_limit:
+            return vertices[x_low_i], values[x_low_i], steps
