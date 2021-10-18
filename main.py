@@ -2,7 +2,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from sympy import diff, Symbol, lambdify
+from sympy import Symbol, lambdify, solve
 from sympy.parsing.sympy_parser import parse_expr
 
 from Algorithms import *
@@ -21,28 +21,6 @@ from Algorithms import *
 # def my_function_der2(argument):
 #     value = (6*argument**2 - 10) / 3
 #     return value
-
-def task_requirement(x, y, z):
-    if x + y + z == 1:
-        return True
-    return False
-
-
-def squared_volume_function(x, y, z):
-    return x * y * z
-
-
-def squared_volume_function_reduced(x, y):
-    return x * y * (1 - x - y)
-
-
-def my_function(x, y):
-    return x + y
-
-
-def grad_my_function(x, y):
-    return [x*y, x-y]
-
 
 def graph_intervals(interval_array, function, name, line_count=6):
     increase = 0.1
@@ -108,37 +86,56 @@ def graph_intervals(interval_array, function, name, line_count=6):
 if __name__ == '__main__':
 
     LSP = '9999956'
+    LSP_a = int(LSP[5])
+    LSP_b = int(LSP[6])
 
-    left_coord = 0
-    right_coord = 10
-    length_boundary = 1e-4
-    step_length_boundary = 1e-4
-    x0 = 5
+    variables = {'x': Symbol('x', real=True),
+                 'y': Symbol('y', real=True),
+                 'z': Symbol('z', real=True)}
+    form_fx = parse_expr('-(x * y * z / (2**3))', variables)
+    form_fx_restriction = parse_expr('x + y + z - 1', variables)
 
-    variable = Symbol('x', real=True)
-    form_fx = parse_expr(f'(x ** 2 - {LSP[5]})**2 / {LSP[6]} - 1', {'x': variable})
-    form_dfx = diff(form_fx, variable)
-    form_ddfx = diff(form_dfx, variable)
+    form_z = solve(form_fx_restriction, variables['z'])[0]
+    form_fx = form_fx.subs(variables['z'], form_z)
+    variables.pop('z')
 
-    fx = lambdify(variable, form_fx, "numpy")
-    dfx = lambdify(variable, form_dfx, "numpy")
-    ddfx = lambdify(variable, form_ddfx, "numpy")
+    fx = lambdify(variables.values(), form_fx, "numpy")
+    form_dfx = [form_fx.diff(the_symbol) for the_symbol in variables.values()]
+    dfx = [lambdify([v for v in variables.values()],
+                    the_dfx,
+                    "numpy")
+           for the_dfx in form_dfx]
+
+    def gradient_fx(values):
+        return np.array([de_fx(*values) for de_fx in dfx])
 
     print(f'LSP: {LSP}')
-    print(f'a={LSP[5]} ; b={LSP[6]}')
-    print(f'length_boundary = {length_boundary}')
-    print(f'step_boundary = {step_length_boundary}')
-
-    summary_divide = dividing_into_halves(left_coord, right_coord, fx, length_boundary)
-    summary_goldy = goldy_cutting(left_coord, right_coord, fx, length_boundary)
-    summary_newton = newton(fx, dfx, ddfx, x0, step_length_boundary)
+    print(f'a={LSP_a} ; b={LSP_b}')
     print('\n\n')
 
-    print_summary(summary_divide, summary_goldy, summary_newton)
+    print_summary()
 
-    args = [10, 5]
-    print(my_function(*args))
     near_zero = sys.float_info.min * sys.float_info.epsilon
+    near_zero2 = 1e-16
+
+    x0 = [0, 0]
+    x1 = [1, 1]
+    xm = [LSP_a/10, LSP_b/10]
+
+    print(f'\ngradientinis taškuose {x0}, {x1}, {xm}')
+    print(gradient_descend(fx, gradient_fx, x0, near_zero2, 1))
+    print(gradient_descend(fx, gradient_fx, x1, near_zero2, 1))
+    print(gradient_descend(fx, gradient_fx, xm, near_zero2, 1))
+
+    print(f'\nGreičiausiasis taškuose {x0}, {x1}, {xm}')
+    print(the_fastest_descend(fx, gradient_fx, x0, near_zero2))
+    print(the_fastest_descend(fx, gradient_fx, x1, near_zero2))
+    print(the_fastest_descend(fx, gradient_fx, xm, near_zero2))
+
+    print(f'\nDeformuojamas taškuose {x0}, {x1}, {xm}')
+    print(deformed_simplex(fx, x0, 0.25, near_zero2))
+    print(deformed_simplex(fx, x1, 0.25, near_zero2))
+    print(deformed_simplex(fx, xm, 0.25, near_zero2*1e13))
 
     # # # # visualisation
     #
