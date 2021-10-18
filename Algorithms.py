@@ -185,7 +185,7 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
 
 
 def deformed_simplex(process_function, x0, start_length, stop_length,
-                     extend_coef=2, normal_contract_coef=0.5, big_contract_coef=-0.5, step_limit=1111):
+                     extend_coef=2, normal_contract_coef=0.5, big_contract_coef=-0.5, step_limit=11111):
     # form a simplex figure
     x = copy.deepcopy(x0)
     if isinstance(x, list):
@@ -226,30 +226,45 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
             if needs_recalculate[i]:
                 values[i] = process_function(*vertices[i])
                 needs_recalculate[i] = False
-            identifier = ['z'.join(*vertices[i])]
+            identifier = 'z'.join([f'{v}' for v in vertices[i]])
             used_vertices[identifier] = True
 
     def _get_high_low_g():
-        the_max = (values[0], 0)
-        the_min = the_max
-        the_2nd_high = the_max
-        for i in range(vertices_c):
-            if values[i] > the_max[0]:
-                the_2nd_high = the_max
-                the_max = (values[i], i)
-            elif values[i] <= the_min[0]:
-                the_min = (values[i], i)
-            elif values[i] > the_2nd_high[0]:
-                the_2nd_high = (values[i], i)
+        # at first the_max/g/min will hold values
+        # then we will switch their values to indexes
 
-        if the_max[1] == the_2nd_high[1] or the_min[1] == the_max[1]:
-            raise NotImplementedError("xh, xg, xl had a collision")
-        return the_max[1], the_2nd_high[1], the_min[1]
+        sorted_values = values.copy()
+        sorted_values.sort()
+        the_min = sorted_values[0]
+        the_max = sorted_values[vertices_c-1]
+        the_2nd_high = sorted_values[vertices_c-2]
+
+        unfilled = [True, True, True]
+        for i in range(vertices_c):
+            if unfilled[0] and values[i] == the_max:
+                the_max = i
+                unfilled[0] = False
+            elif unfilled[1] and values[i] == the_2nd_high:
+                the_2nd_high = i
+                unfilled[1] = False
+            elif unfilled[2] and values[i] == the_min:
+                the_min = i
+                unfilled[2] = False
+
+        if the_max == the_2nd_high or the_min == the_max:
+
+            raise NotImplementedError(f"xh, xg, xl had a collision.\n"
+                                      f"all_vertices =\n"
+                                      f"{[(vertices[i], values[i]) for i in range(len(vertices))]}\n"
+                                      f"the_max = {the_max}\n"
+                                      f"the_2nd_high = {the_2nd_high}\n"
+                                      f"the_min = {the_min}")
+        return the_max, the_2nd_high, the_min
 
     def _get_x_new(the_x_center):
         x_high = vertices[x_high_i]
         x_direction_to_center = the_x_center - x_high
-        x_temp = x_high + x_direction_to_center
+        x_temp = x_high + x_direction_to_center * 2
         x_temp_value = process_function(*x_temp)
 
         # extend, reduce, negative reduce
@@ -262,9 +277,10 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
             multiplier = big_contract_coef
         elif values[x_g_i] < x_temp_value < values[x_high_i]:
             multiplier = normal_contract_coef
+        multiplier += 1
 
         x_new = x_high + multiplier * x_direction_to_center
-        value = x_temp_value if multiplier == 1 else process_function(*x_new)
+        value = x_temp_value if multiplier == 2 else process_function(*x_new)
 
         # if multiplier == 1, calls = 1 ; else calls = 2
         return x_new, value
