@@ -170,9 +170,10 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
         si = process_function_gradient(x)
 
         def func_with_step(gamma):
-            return process_function(*(x.copy() - gamma * si.copy()))
+            return process_function(*(x - gamma * si))
 
-        goldy_summary = goldy_cutting(0, 10, func_with_step, length_boundary=1e-3, step_limit=111)
+        # with right_boundary = 10 or = 2 we would jump too far
+        goldy_summary = goldy_cutting(0, steps, func_with_step, length_boundary=1e-5, step_limit=111)
         gamma_step = goldy_summary.solution
 
         x = x - gamma_step * si
