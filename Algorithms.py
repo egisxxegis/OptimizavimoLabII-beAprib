@@ -7,7 +7,7 @@ import numpy as np
 
 
 def print_summary(*args):
-    headers = ["Name", "Found solution", "Solution", "Value", "Steps (N)", "f calls", "df calls", "ddf calls"]
+    headers = ["Name", "Solution", "f(X)", "Steps (N)", "f calls", "df calls"]
     if len(args) < 1:
         print(tabulate([], headers=headers))
         return
@@ -16,13 +16,11 @@ def print_summary(*args):
     print('Name, Solution, f(x)')
     for argument in args:
         data.append([argument.name,
-                     argument.done,
                      argument.solution,
                      argument.value,
                      argument.steps,
                      argument.fx_times,
-                     argument.dfx_times,
-                     argument.ddfx_times])
+                     argument.dfx_times])
         print(f'{argument.name}, {argument.solution}, {argument.value}')
     print('\n\n')
     print(tabulate(data, headers=headers))
@@ -153,7 +151,7 @@ def gradient_descend(process_function, process_function_gradient, x0, gradient_n
         summary.dfx_times += len(x)
         x_next = x - gamma_step * si
         x = x_next.copy()
-        summary.gamma_x_value_history.append((1, copy.deepcopy(x), None))
+        summary.gamma_x_value_history.append((gamma_step, copy.deepcopy(x), None))
         if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
             # finished
             break
