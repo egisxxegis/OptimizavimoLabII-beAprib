@@ -20,7 +20,7 @@ def print_summary(*args):
                      argument.solution,
                      argument.value,
                      argument.steps,
-                     argument.function_called_times,
+                     argument.fx_times,
                      argument.dfx_times,
                      argument.ddfx_times])
         print(f'{argument.name}, {argument.solution}, {argument.value}')
@@ -131,8 +131,8 @@ def newton(process_function, process_function_derivative, process_function_deriv
                                process_function(xi.coord),
                                steps,
                                name="Newton").collect_data_from_points(xi, xi1)
-    summary.dfx_times = summary.function_called_times
-    summary.function_called_times = 1
+    summary.dfx_times = summary.fx_times
+    summary.fx_times = 1
     summary.ddfx_times = calls_derivative2
     summary.done = done
     return summary
@@ -144,17 +144,24 @@ def gradient_descend(process_function, process_function_gradient, x0, gradient_n
         x = np.array(x)
     if not isinstance(x, np.ndarray):
         raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
-    steps = 0
+
+    summary = ExecutionSummary(name="Gradientinis nusileidimas")
+    summary.gamma_x_value_history.append((0, copy.deepcopy(x), None))
     while True:
-        steps += 1
+        summary.steps += 1
         si = process_function_gradient(x)  # n df calls
+        summary.dfx_times += len(x)
         x_next = x - gamma_step * si
         x = x_next.copy()
+        summary.gamma_x_value_history.append((1, copy.deepcopy(x), None))
         if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
             # finished
             break
         continue
-    return x, process_function(*x), steps
+    summary.solution = x
+    summary.value = process_function(*x)
+    summary.fx_times += 1
+    return summary
 
 
 def the_fastest_descend(process_function, process_function_gradient, x0, gradient_norm_epsilon):
@@ -163,25 +170,34 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
         x = np.array(x)
     if not isinstance(x, np.ndarray):
         raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
-    steps = 0
 
+    summary = ExecutionSummary(name="Greičiausias nusileidimas")
+    summary.gamma_x_value_history.append((0, copy.deepcopy(x), None))
     while True:
-        steps += 1
+        summary.steps += 1
         si = process_function_gradient(x)
+        summary.dfx_times += len(x)
 
         def func_with_step(gamma):
             return process_function(*(x - gamma * si))
 
         # with right_boundary = 10 or = 2 we would jump too far
-        goldy_summary = goldy_cutting(0, steps, func_with_step, length_boundary=1e-5, step_limit=111)
+        goldy_summary = goldy_cutting(0, summary.steps, func_with_step, length_boundary=1e-5, step_limit=111)
         gamma_step = goldy_summary.solution
 
         x = x - gamma_step * si
 
+        summary.fx_times += goldy_summary.fx_times
+        summary.gamma_x_value_history.append((gamma_step, copy.deepcopy(x), None))
+
         if np.linalg.norm(si, ord=None) < gradient_norm_epsilon:
             break
         continue
-    return x, process_function(*x), steps
+
+    summary.solution = x
+    summary.value = process_function(*x)
+    summary.fx_times += 1
+    return summary
 
 
 def deformed_simplex(process_function, x0, start_length, stop_length,
@@ -202,7 +218,6 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
     vertices = [np.zeros(n) for i in range(vertices_c)]
     values = [i for i in range(vertices_c)]
     needs_recalculate = np.zeros(vertices_c) == 0
-    used_vertices = {}
 
     def _get_xcenter(regarding_vertice_i):
         the_center = np.zeros(n)
@@ -226,8 +241,6 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
             if needs_recalculate[i]:
                 values[i] = process_function(*vertices[i])
                 needs_recalculate[i] = False
-            identifier = 'z'.join([f'{v}' for v in vertices[i]])
-            used_vertices[identifier] = True
 
     def _get_high_low_g():
         # at first the_max/g/min will hold values
@@ -283,17 +296,32 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
         value = x_temp_value if multiplier == 2 else process_function(*x_new)
 
         # if multiplier == 1, calls = 1 ; else calls = 2
-        return x_new, value
+        return x_new, value, 2 if multiplier == 2 else 1
+
+    summary = ExecutionSummary(name="Nelder-Mead")
 
     # let us iterate
     _calculate_values()
     x_high_i, x_g_i, x_low_i = _get_high_low_g()
-    steps = 0
+
+    for i in range(vertices_c):
+        summary.gamma_x_value_history.append((None, vertices[i], values[i]))
+    summary.fx_times += vertices_c
+
     while True:
-        steps += 1
+        summary.steps += 1
+
         x_center = _get_xcenter(x_high_i)
-        vertices[x_high_i], values[x_high_i] = _get_x_new(x_center)
+        vertices[x_high_i], values[x_high_i], temp_fx_calls = _get_x_new(x_center)
+
+        summary.gamma_x_value_history.append((None, copy.deepcopy(vertices[x_high_i]), values[x_high_i]))
+        summary.fx_times += temp_fx_calls
+
         x_high_i, x_g_i, x_low_i = _get_high_low_g()
         if np.linalg.norm(vertices[x_high_i] - vertices[x_low_i], ord=None) < stop_length \
-                or steps >= step_limit:
-            return vertices[x_low_i], values[x_low_i], steps
+                or summary.steps >= step_limit:
+            break
+
+    summary.solution = vertices[x_low_i]
+    summary.value = values[x_low_i]
+    return summary

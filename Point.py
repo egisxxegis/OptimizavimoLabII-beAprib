@@ -4,7 +4,7 @@ class Point:
         self.coord = coord
         self.value = 0
         self.needsRefresh = True
-        self.function_called_times = 0
+        self.fx_times = 0
         self.collect_function_call_history = record_calls
         if self.collect_function_call_history:
             self.history = {}
@@ -25,7 +25,7 @@ class Point:
     def calculate(self):
         if self.needsRefresh:
             self.set_value_and_mark(self.process_function(self.coord))
-            self.function_called_times += 1
+            self.fx_times += 1
             if self.collect_function_call_history:
                 self.history[self.coord] = self.value
 
