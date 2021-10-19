@@ -7,7 +7,7 @@ import numpy as np
 
 
 def print_summary(*args):
-    headers = ["Name", "Solution", "f(X)", "Steps (N)", "f calls", "df calls"]
+    headers = ["Name", "Solution", "f(X)", "Steps (N)", "f calls", "df calls", "edges length", "volume"]
     if len(args) < 1:
         print(tabulate([], headers=headers))
         return
@@ -20,7 +20,10 @@ def print_summary(*args):
                      argument.value,
                      argument.steps,
                      argument.fx_times,
-                     argument.dfx_times])
+                     argument.dfx_times,
+                     argument.translated,
+                     argument.translated_fx]
+                    )
         print(f'{argument.name}, {argument.solution}, {argument.value}')
     print('\n\n')
     print(tabulate(data, headers=headers))
