@@ -165,12 +165,20 @@ def gradient_descend(process_function, process_function_gradient, x0, gradient_n
     return summary
 
 
-def the_fastest_descend(process_function, process_function_gradient, x0, gradient_norm_epsilon):
+def the_fastest_descend(process_function, process_function_gradient, x0, gradient_norm_epsilon,
+                        gamma_search_length_boundary=None, gamma_search_right_coord=None,
+                        gamma_search_step_limit=111):
     x = copy.deepcopy(x0)
     if isinstance(x, list):
         x = np.array(x)
     if not isinstance(x, np.ndarray):
         raise TypeError("Duotas x0 nebuvo list arba numpy.ndarray tipo")
+
+    gamma_boundary_given = False if gamma_search_length_boundary is None else True
+    gamma_coord_given = False if gamma_search_right_coord is None else True
+
+    gamma_search_length_boundary = gamma_search_length_boundary if gamma_boundary_given else 1e-5
+    # gamma right coord is changed throughout iterations if not given
 
     summary = ExecutionSummary(name="Greičiausias nusileidimas")
     summary.gamma_x_value_history.append((0, copy.deepcopy(x), None))
@@ -183,8 +191,24 @@ def the_fastest_descend(process_function, process_function_gradient, x0, gradien
             return process_function(*(x - gamma * si))
 
         # with right_boundary = 10 or = 2 we would jump too far
-        goldy_summary = goldy_cutting(0, summary.steps, func_with_step, length_boundary=1e-5, step_limit=111)
+        the_length_boundary = gamma_search_length_boundary
+        gamma_search_right_coord = gamma_search_right_coord if gamma_coord_given else summary.steps
+        gamma_search_left_coord = -the_length_boundary/6
+        # enable answer near zero (look at left coord)
+        goldy_summary = goldy_cutting(left_coord=gamma_search_left_coord,
+                                      right_coord=gamma_search_right_coord,
+                                      process_function=func_with_step,
+                                      length_boundary=the_length_boundary,
+                                      step_limit=gamma_search_step_limit)
         gamma_step = goldy_summary.solution
+        # if gamma_step < 0:
+        #     raise ValueError(f"gamma_step below zero!\n"
+        #                      f"gamma_step = {gamma_step}\n"
+        #                      f"that is {gamma_step / gamma_search_left_coord}% of left coord\n"
+        #                      f"that is {gamma_search_left_coord - gamma_step} difference in between them\n"
+        #                      f"if that is the x_left, then left coord should be here: "
+        #                      f"{gamma_step * (2-(1+5**0.5)/2) * gamma_search_length_boundary}\n"
+        #                      f"and the given left coord was: {gamma_search_left_coord}\n")
 
         x = x - gamma_step * si
 
