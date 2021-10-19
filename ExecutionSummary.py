@@ -11,6 +11,7 @@ class ExecutionSummary:
         self.history = {}
         self.interval_history = interval_history
         self.gamma_x_value_history = []
+        self.simplex_high_history_indexes = []
         self.done = True
 
     def set_results(self, solution, value, steps):

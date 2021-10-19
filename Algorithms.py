@@ -336,6 +336,7 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
     while True:
         summary.steps += 1
 
+        summary.simplex_high_history_indexes.append(x_high_i)  # last simplex will not be documented
         x_center = _get_xcenter(x_high_i)
         vertices[x_high_i], values[x_high_i], temp_fx_calls = _get_x_new(x_center)
 
