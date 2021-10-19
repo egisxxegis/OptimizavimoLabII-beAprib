@@ -22,66 +22,6 @@ from Algorithms import *
 #     value = (6*argument**2 - 10) / 3
 #     return value
 
-def graph_intervals(interval_array, function, name, line_count=6):
-    increase = 0.1
-    reset = True
-    offset = 0
-    colors = ['c-', 'g-', 'm-', 'r-', 'b-', 'y-']
-    step_for_length = lambda x: x / 240
-    suffix = ''
-    for graph_index in range(0, len(interval_array)):
-
-        start = interval_array[graph_index][0]
-        end = interval_array[graph_index][1]
-        length = end - start
-
-        if graph_index - offset >= line_count:
-            reset = True
-            plt.title(f'{name}{suffix}')
-            plt.grid()
-            plt.xlabel('x')
-            plt.ylabel('f(x)')
-            plt.legend()
-            plt.show()
-            if offset == 0:
-                suffix = '; zoomed in'
-            else:
-                suffix = suffix + '+'
-            offset = graph_index
-
-        if reset:
-            # plot basic function
-            if offset == 0:
-                # add tails
-                start0 = start - length * increase
-                end0 = end + length * increase
-            else:
-                # continue from last shown interval
-                start0 = interval_array[graph_index-1][0]
-                end0 = interval_array[graph_index-1][1]
-            x_arr = np.arange(start0, end0, step_for_length(length))
-            y_arr = function(x_arr)
-            plt.plot(x_arr, y_arr, 'k-', label='f(x)')
-            reset = False
-
-        # plot interval
-        x_arr = np.arange(start, end, step_for_length(end - start))
-        plt.plot(x_arr,
-                 function(x_arr),
-                 colors[graph_index - offset],
-                 label=f'interval at N={graph_index + 1}',
-                 linewidth=((graph_index - offset+1)*2))
-
-    # flush if needed
-    if graph_index % line_count != 0:
-        plt.title(f'{name}{suffix}')
-        plt.grid()
-        plt.xlabel('x')
-        plt.ylabel('f(x)')
-        plt.legend()
-        plt.show()
-    plt.clf()
-
 
 if __name__ == '__main__':
 
@@ -109,33 +49,75 @@ if __name__ == '__main__':
     def gradient_fx(values):
         return np.array([de_fx(*values) for de_fx in dfx])
 
+    def two_arguments_to_edges(the_x, the_y):
+        the_z = form_z.subs([(variables['x'], the_x), (variables['y'], the_y)])
+        the_length = (the_x * the_z / the_y / 2)**0.5
+        the_width = (the_y * the_z / the_x / 2)**0.5
+        the_height = (the_x * the_y / the_z / 2)**0.5
+        return the_length, the_width, the_height
+
     print(f'LSP: {LSP}')
     print(f'a={LSP_a} ; b={LSP_b}')
     print('\n\n')
 
-    print_summary()
-
     near_zero = sys.float_info.min * sys.float_info.epsilon
     near_zero2 = 1e-16
+    near_zero3 = 1e-6
+    start_length = 0.25
 
     x0 = [0, 0]
     x1 = [1, 1]
     xm = [LSP_a/10, LSP_b/10]
 
-    print(f'\ngradientinis taškuose {x0}, {x1}, {xm}')
-    print(gradient_descend(fx, gradient_fx, x0, near_zero2, 1))
-    print(gradient_descend(fx, gradient_fx, x1, near_zero2, 1))
-    print(gradient_descend(fx, gradient_fx, xm, near_zero2, 1))
+    x = x0
+    x0_summaries = [
+        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
+        the_fastest_descend(fx, gradient_fx, x, near_zero2),
+        deformed_simplex(fx, x, start_length, near_zero2)
+    ]
 
-    print(f'\nGreičiausiasis taškuose {x0}, {x1}, {xm}')
-    print(the_fastest_descend(fx, gradient_fx, x0, near_zero2))
-    print(the_fastest_descend(fx, gradient_fx, x1, near_zero2))
-    print(the_fastest_descend(fx, gradient_fx, xm, near_zero2))
+    x = x1
+    x1_summaries = [
+        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
+        the_fastest_descend(fx, gradient_fx, x, near_zero2),
+        deformed_simplex(fx, x, start_length, near_zero2)
+    ]
 
-    print(f'\nDeformuojamas taškuose {x0}, {x1}, {xm}')
-    print(deformed_simplex(fx, x0, 0.25, near_zero2))
-    print(deformed_simplex(fx, x1, 0.25, near_zero2))
-    print(deformed_simplex(fx, xm, 0.25, near_zero2*1e13))
+    x = xm
+    xm_summaries = [
+        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
+        the_fastest_descend(fx, gradient_fx, x, near_zero2),
+        deformed_simplex(fx, x, start_length, near_zero2)
+    ]
+
+    x_experiments = [(x0, x0_summaries), (x1, x1_summaries), (xm, xm_summaries)]
+
+    for start_point, summaries in x_experiments:
+        for summary in summaries:
+            summary.translated = two_arguments_to_edges(*summary.solution)
+            volume = 1
+            for edge in summary.translated:
+                volume *= edge
+            summary.translated_fx = volume
+        print(f"\n-------------Summary---------\n"
+              f"Starting point = {start_point}")
+        print_summary(*summaries)
+        print(f'-----------------------------\n')
+
+    # print(f'\ngradientinis taškuose {x0}, {x1}, {xm}')
+    # print(gradient_descend(fx, gradient_fx, x0, near_zero2, 1))
+    # print(gradient_descend(fx, gradient_fx, x1, near_zero2, 1))
+    # print(gradient_descend(fx, gradient_fx, xm, near_zero2, 1))
+    #
+    # print(f'\nGreičiausiasis taškuose {x0}, {x1}, {xm}')
+    # print(the_fastest_descend(fx, gradient_fx, x0, near_zero2))
+    # print(the_fastest_descend(fx, gradient_fx, x1, near_zero2))
+    # print(the_fastest_descend(fx, gradient_fx, xm, near_zero2))
+    #
+    # print(f'\nDeformuojamas taškuose {x0}, {x1}, {xm}')
+    # print(deformed_simplex(fx, x0, 0.25, near_zero2))
+    # print(deformed_simplex(fx, x1, 0.25, near_zero2))
+    # print(deformed_simplex(fx, xm, 0.25, near_zero2*1e13))
 
     # # # # visualisation
     #
