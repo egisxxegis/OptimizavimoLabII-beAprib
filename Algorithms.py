@@ -258,8 +258,8 @@ def deformed_simplex(process_function, x0, start_length, stop_length,
     for vertice_i in range(n):
         for axis_i in range(n):
             delta = delta1 if vertice_i != axis_i else delta2
-            vertices[vertice_i][axis_i] = x[axis_i] + delta
-    vertices[vertices_c - 1] = x  # x0 is also a vertice
+            vertices[vertice_i+1][axis_i] = x[axis_i] + delta
+    vertices[0] = x  # x0 is also a vertice
 
     def _calculate_values():
         for i in range(vertices_c):
