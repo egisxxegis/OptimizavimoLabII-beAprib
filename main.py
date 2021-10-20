@@ -1,26 +1,111 @@
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plot
+import pylab
 from sympy import Symbol, lambdify, solve
 from sympy.parsing.sympy_parser import parse_expr
 
 from Algorithms import *
 
 
-# def my_function(argument):
-#     value = (argument ** 2 - 5)**2 / 6 - 1
-#     return value
-#
-#
-# def my_function_der1(argument):
-#     value = 2*argument * (argument**2 - 5) / 3
-#     return value
-#
-#
-# def my_function_der2(argument):
-#     value = (6*argument**2 - 10) / 3
-#     return value
+def prepare_contour(levels=78, show_labels=False):
+    the_xs = []
+    the_ys = []
+    coord_minimum = -0.5
+    coord_maximum = 1.3
+
+    for val in np.arange(coord_minimum, coord_maximum + 1e-100, 0.1):
+        the_xs.append(val)
+        the_ys.append(val)
+
+    # Z values as a matrix
+    the_values = np.ndarray((len(the_xs), len(the_ys)))
+
+    # Populate values
+    for the_x in range(0, len(the_xs)):
+        for the_y in range(0, len(the_ys)):
+            the_values[the_x][the_y] = fx(the_xs[the_x], the_ys[the_y])
+
+    # axis limits
+    pylab.xlim([coord_minimum, coord_maximum])
+    pylab.ylim([coord_minimum, coord_maximum])
+
+    plot.title('Contour plot')
+    plot.xlabel('x')
+    plot.ylabel('y')
+    contours = plot.contour(the_xs, the_ys, the_values, levels=levels)
+
+    # show values on contour
+    if show_labels:
+        plot.clabel(contours, inline=1, fontsize=10)
+
+
+def summary_to_graph(s1, number_early_attempts=False, color="y-"):
+    the_xs = []
+    the_ys = []
+
+    first_iteration = True
+    i = -1
+    for gamma, the_args, the_value in s1.gamma_x_value_history:
+        i += 1
+        if first_iteration:
+            first_iteration = False
+
+        the_xs.append(the_args[0])
+        the_ys.append(the_args[1])
+
+        if number_early_attempts:
+            if 1 <= i+1 <= 4 and i > 0:
+                plot.annotate(f'#{i}', [the_xs[i], the_ys[i]])
+
+    plot.plot(the_xs, the_ys, color, label=s1.name)
+
+
+def summary_simplex_to_graph(s1, number_early_attempts=False, color="r-", limit_steps=11111):
+    vertices = []
+    x_high_i = 0
+
+    starting = True
+    i = -1
+    for gamma, the_args, the_value in s1.gamma_x_value_history:
+        i += 1
+
+        if starting:
+            vertices.append(the_args)
+            if i == 2:
+                starting = False
+            else:
+                continue
+        else:  # first occur with i == 3
+            x_high_i = s1.simplex_high_history_indexes[i-3]
+            vertices[x_high_i] = the_args
+
+        # listened to change -> form triangle -> draw
+        # form triangle
+        triangle_xs = []
+        triangle_ys = []
+        for vertice in vertices:
+            triangle_xs.append(vertice[0])
+            triangle_ys.append(vertice[1])
+
+        # triangle touches its start, doesn't it?
+        triangle_xs.append(triangle_xs[0])
+        triangle_ys.append(triangle_ys[0])
+
+        # number
+        if number_early_attempts:
+            if 1 <= i+1 <= 7:
+                if i == 2:
+                    for iii in range(3):
+                        plot.annotate(f'#{iii+1}', [triangle_xs[iii], triangle_ys[iii]])
+                else:
+                    plot.annotate(f'#{i+1}', [triangle_xs[x_high_i], triangle_ys[x_high_i]])
+
+        # draw
+        plot.plot(triangle_xs, triangle_ys, color, label=s1.name)
+        if limit_steps == i:
+            return
 
 
 if __name__ == '__main__':
@@ -115,11 +200,17 @@ if __name__ == '__main__':
     # print(the_fastest_descend(fx, gradient_fx, xm, near_zero2))
     #
     # print(f'\nDeformuojamas taškuose {x0}, {x1}, {xm}')
-    # print(deformed_simplex(fx, x0, 0.25, near_zero2))
-    # print(deformed_simplex(fx, x1, 0.25, near_zero2))
-    # print(deformed_simplex(fx, xm, 0.25, near_zero2*1e13))
+    # print(deformed_simplex(fx, x0, start_length, near_zero2))
+    # print(deformed_simplex(fx, x1, start_length, near_zero2))
+    # print(deformed_simplex(fx, xm, start_length, near_zero2*1e13))
 
     # # # # visualisation
+
+    prepare_contour()
+    summary_to_graph(x_experiments[1][1][0], True)
+    summary_simplex_to_graph(x_experiments[1][1][2], True, limit_steps=100)
+    plot.show()
+
     #
     # # # plot basic function
     #
