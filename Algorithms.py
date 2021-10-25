@@ -13,7 +13,7 @@ def print_summary(*args):
         return
     # Use a breakpoint in the code line below to debug your script.
     data = []
-    print('Name, Solution, f(x)')
+    print('Name, Solution, f(X), volume')
     for argument in args:
         data.append([argument.name,
                      argument.solution,
@@ -24,7 +24,7 @@ def print_summary(*args):
                      argument.translated,
                      argument.translated_fx]
                     )
-        print(f'{argument.name}, {argument.solution}, {argument.value}')
+        print(f'{argument.name}, {argument.solution}, {argument.value}, {argument.translated_fx}')
     print('\n\n')
     print(tabulate(data, headers=headers))
 
