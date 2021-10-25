@@ -9,13 +9,13 @@ from sympy.parsing.sympy_parser import parse_expr
 from Algorithms import *
 
 
-def prepare_contour(levels=78, show_labels=False):
+def prepare_contour(levels=100, show_labels=False):
     the_xs = []
     the_ys = []
     coord_minimum = -0.5
     coord_maximum = 1.3
 
-    for val in np.arange(coord_minimum, coord_maximum + 1e-100, 0.1):
+    for val in np.arange(coord_minimum, coord_maximum*1.05 + 1e-100, 0.1):
         the_xs.append(val)
         the_ys.append(val)
 
@@ -41,7 +41,7 @@ def prepare_contour(levels=78, show_labels=False):
         plot.clabel(contours, inline=1, fontsize=10)
 
 
-def summary_to_graph(s1, number_early_attempts=False, color="y-"):
+def summary_to_graph(s1, the_x_vector: [float, float], number_early_attempts=False, color="y-"):
     the_xs = []
     the_ys = []
 
@@ -58,6 +58,9 @@ def summary_to_graph(s1, number_early_attempts=False, color="y-"):
         if number_early_attempts:
             if 1 <= i+1 <= 4 and i > 0:
                 plot.annotate(f'#{i}', [the_xs[i], the_ys[i]])
+
+    if number_early_attempts and [the_xs[1], the_ys[1]] != [the_x_vector[0], the_x_vector[1]]:
+        plot.annotate(f'X', [the_x_vector[0], the_x_vector[1]])
 
     plot.plot(the_xs, the_ys, color, label=s1.name)
 
@@ -108,6 +111,22 @@ def summary_simplex_to_graph(s1, number_early_attempts=False, color="r-", limit_
             return
 
 
+def gamma_to_graph(the_summary: ExecutionSummary, color="r-"):
+    the_ys = []
+    for the_gamma, the_x, the_value in the_summary.gamma_x_value_history:
+        the_ys.append(the_gamma)
+    the_xs = range(len(the_ys))
+    the_suffix = '.\nMetodas: ' + the_summary.name
+    plot.title('Naudota gama reikšmė žingsnių juostoje' + the_suffix)
+    plot.xlabel('žingsnis')
+    plot.ylabel('gama')
+    pylab.xlim(the_xs[0], the_xs[-1])
+    the_max_y = max(*the_ys)
+    the_max_y = the_max_y*1.1 if the_max_y*1.1 > 31 else 31
+    pylab.ylim(0, the_max_y)
+    plot.plot(the_xs, the_ys, color, label=the_summary.name + '. gamma')
+
+
 if __name__ == '__main__':
 
     LSP = '9999956'
@@ -136,6 +155,9 @@ if __name__ == '__main__':
 
     def two_arguments_to_edges(the_x, the_y):
         the_z = form_z.subs([(variables['x'], the_x), (variables['y'], the_y)])
+        the_mult = the_z * the_x * the_y
+        if the_mult == 0:
+            return 0, 0, 0
         the_length = (the_x * the_z / the_y / 2)**0.5
         the_width = (the_y * the_z / the_x / 2)**0.5
         the_height = (the_x * the_y / the_z / 2)**0.5
@@ -148,34 +170,27 @@ if __name__ == '__main__':
     near_zero = sys.float_info.min * sys.float_info.epsilon
     near_zero2 = 1e-16
     near_zero3 = 1e-6
-    start_length = 0.25
+    start_length = 0.09
+    gamma_step = 3.8
+    gradient_stop = near_zero2
+    stop_line = 1e-8
 
     x0 = [0, 0]
     x1 = [1, 1]
     xm = [LSP_a/10, LSP_b/10]
+    xs = [x0, x1, xm]
 
-    x = x0
-    x0_summaries = [
-        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
-        the_fastest_descend(fx, gradient_fx, x, near_zero2),
-        deformed_simplex(fx, x, start_length, near_zero2)
-    ]
+    xs_summary = []
+    for x in xs:
+        xs_summary.append(
+            [
+                gradient_descend(fx, gradient_fx, x, stop_line, gamma_step=gamma_step),
+                the_fastest_descend(fx, gradient_fx, x, stop_line),
+                deformed_simplex(fx, x, start_length, stop_line, step_limit=189999)
+            ]
+        )
 
-    x = x1
-    x1_summaries = [
-        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
-        the_fastest_descend(fx, gradient_fx, x, near_zero2),
-        deformed_simplex(fx, x, start_length, near_zero2)
-    ]
-
-    x = xm
-    xm_summaries = [
-        gradient_descend(fx, gradient_fx, x, near_zero2, gamma_step=1),
-        the_fastest_descend(fx, gradient_fx, x, near_zero2),
-        deformed_simplex(fx, x, start_length, near_zero2)
-    ]
-
-    x_experiments = [(x0, x0_summaries), (x1, x1_summaries), (xm, xm_summaries)]
+    x_experiments = [(xs[ii], xs_summary[ii]) for ii in range(len(xs))]
 
     for start_point, summaries in x_experiments:
         for summary in summaries:
@@ -189,95 +204,56 @@ if __name__ == '__main__':
         print_summary(*summaries)
         print(f'-----------------------------\n')
 
-    # print(f'\ngradientinis taškuose {x0}, {x1}, {xm}')
-    # print(gradient_descend(fx, gradient_fx, x0, near_zero2, 1))
-    # print(gradient_descend(fx, gradient_fx, x1, near_zero2, 1))
-    # print(gradient_descend(fx, gradient_fx, xm, near_zero2, 1))
-    #
-    # print(f'\nGreičiausiasis taškuose {x0}, {x1}, {xm}')
-    # print(the_fastest_descend(fx, gradient_fx, x0, near_zero2))
-    # print(the_fastest_descend(fx, gradient_fx, x1, near_zero2))
-    # print(the_fastest_descend(fx, gradient_fx, xm, near_zero2))
-    #
-    # print(f'\nDeformuojamas taškuose {x0}, {x1}, {xm}')
-    # print(deformed_simplex(fx, x0, start_length, near_zero2))
-    # print(deformed_simplex(fx, x1, start_length, near_zero2))
-    # print(deformed_simplex(fx, xm, start_length, near_zero2*1e13))
+    # for ii in np.arange(0.4, 10.1, 0.2):
+    #     gamma_step = ii
+    #     for jj in range(3):
+    #         x_experiments[jj][1][0] = gradient_descend(fx,
+    #                                                    gradient_fx,
+    #                                                    x_experiments[jj][0],
+    #                                                    near_zero2,
+    #                                                    gamma_step=gamma_step)
+    #     print(f'\ngradientinis taškuose {x0}, {x1}, {xm}. gammma = {gamma_step}, epsilon = {gradient_stop}')
+    #     print(f'solution, fx, steps')
+    #     for start_point, summaries in x_experiments:
+    #         print(f'{summaries[0].solution}, {summaries[0].value}, {summaries[0].steps}')
+
+    # for ii in np.arange(0.01, 0.141, 0.01):
+    #     alfa = ii
+    #     for jj in range(3):
+    #         x_experiments[jj][1][2] = deformed_simplex(fx,
+    #                                                    x_experiments[jj][0],
+    #                                                    alfa,
+    #                                                    stop_line,
+    #                                                    step_limit=1000)
+    #     print(f'\nNelder-Mead taškuose {x0}, {x1}, {xm}. alpha = {alfa}, epsilon = {gradient_stop}')
+    #     print(f'solution, fx, steps')
+    #     for start_point, summaries in x_experiments:
+    #         print(f'{summaries[2].solution}, {summaries[2].value}, {summaries[2].steps}')
 
     # # # # visualisation
 
-    prepare_contour()
-    summary_to_graph(x_experiments[1][1][0], True)
-    summary_simplex_to_graph(x_experiments[1][1][2], True, limit_steps=100)
-    plot.show()
-
-    #
-    # # # plot basic function
-    #
-    # # 1st picture. [-10; 10] and our task at [0; 10]
-    # xs = np.arange(-10., 10., 0.05)
-    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
-    # xs = np.arange(0., 10., 0.05)
-    # plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 10]', linewidth=3)
-    # plt.title(
-    #     fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafiškai išskiriant mums svarbią sritį: x ∈ [0; 10]')
-    # plt.grid()
-    # plt.xlabel('x')
-    # plt.ylabel('f(x)')
-    # plt.legend()
-    # plt.show()
-    #
-    # # 2nd picture. [-5; 5] and [0; 5]
-    # xs = np.arange(-5., 5., 0.05)
-    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
-    # xs = np.arange(0., 5., 0.05)
-    # plt.plot(xs, fx(xs), 'b-', label='f(x) intervale [0; 5]')
-    # plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [-5; 5]')
-    # plt.grid()
-    # plt.xlabel('x')
-    # plt.ylabel('f(x)')
-    # plt.legend()
-    # plt.show()
-    #
-    # # 3rd picture. [0; 10]
-    # xs = np.arange(0., 10., 0.01)
-    # plt.plot(xs, fx(xs), 'b-', label='f(x)')
-    # plt.title(fr'f(x) = ${str(form_fx).replace("**", "^")}$ ' + '\ngrafikas, kai x ∈ [0; 10]')
-    # plt.grid()
-    # plt.xlabel('x')
-    # plt.ylabel('f(x)')
-    # plt.legend()
-    # plt.show()
-    #
-    # # # plot interval methods
-    # graph_intervals(summary_divide.interval_history, fx, summary_divide.name)
-    # graph_intervals(summary_goldy.interval_history, fx, summary_goldy.name)
-    #
-    # # # plot scatter type methods
-    #
-    # #  plot basic function
-    # xs = np.arange(-0., 6., 0.001)
-    # plt.plot(xs, fx(xs), 'r-', label='f(x)')
-    #
-    # # plot summary newton
-    # xs = []
-    # ys = []
-    # counter = 0
-    # for k, v in summary_newton.history.items():
-    #     xs.append(k)
-    #     ys.append(fx(k))
-    #     plt.annotate(f'#{counter}', [k, fx(k)])
-    #     counter += 1
-    # plt.scatter(xs, ys, c='m', label='newton')
-    # plt.annotate(f'Solution at x = {xs[-1]: <#01.5f}',
-    #              xy=(xs[-1], ys[-1]),
-    #              xytext=(xs[-1], ys[0]),
-    #              arrowprops=dict(
-    #                  facecolor='black',
-    #                  shrink=0.05))
-    # plt.title(f'{summary_newton.name} in {summary_newton.steps} steps\n(x0 (at #0) is not counted as a step)')
-    # plt.grid()
-    # plt.xlabel('x')
-    # plt.ylabel('f(x)')
-    # plt.legend()
-    # plt.show()
+    to_graph = False
+    if to_graph:
+        for start_point, summaries in x_experiments:
+            colors = ['m-', 'g-', 'c-', 'r-', 'b-', 'y-']
+            title = f'Eksperimento pradinis taškas X = ({start_point[0]}, {start_point[1]})'
+            # gradient and steepest
+            for ii in range(2):
+                prepare_contour()
+                summary_to_graph(summaries[ii], start_point, True, color=colors[ii])
+                plot.title(title + f"\nmetodas: {summaries[ii].name}")
+                plot.show()
+                gamma_to_graph(summaries[ii])
+                plot.show()
+            prepare_contour()
+            # simplex
+            summary_simplex_to_graph(summaries[2], True, limit_steps=100, color=colors[3])
+            plot.title(title + f"\nmetodas: {summaries[2].name}")
+            plot.show()
+            # all of them
+            prepare_contour()
+            summary_to_graph(summaries[0], start_point, False, color=colors[0])
+            summary_to_graph(summaries[1], start_point, False, color=colors[1])
+            summary_simplex_to_graph(summaries[2], False, limit_steps=100, color=colors[3])
+            plot.title(title + f"\nVisi metodai")
+            plot.show()
