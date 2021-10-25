@@ -232,7 +232,7 @@ if __name__ == '__main__':
 
     # # # # visualisation
 
-    to_graph = False
+    to_graph = True
     if to_graph:
         for start_point, summaries in x_experiments:
             colors = ['m-', 'g-', 'c-', 'r-', 'b-', 'y-']
