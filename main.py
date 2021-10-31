@@ -39,6 +39,7 @@ def prepare_contour(levels=100, show_labels=False):
     # show values on contour
     if show_labels:
         plot.clabel(contours, inline=1, fontsize=10)
+    plot.rcParams.update({'font.size': 12})
 
 
 def summary_to_graph(s1, the_x_vector: [float, float], number_early_attempts=False, color="y-"):
@@ -57,10 +58,12 @@ def summary_to_graph(s1, the_x_vector: [float, float], number_early_attempts=Fal
 
         if number_early_attempts:
             if 1 <= i+1 <= 4 and i > 0:
-                plot.annotate(f'#{i}', [the_xs[i], the_ys[i]])
+                plot.annotate(f'{i}', [the_xs[i], the_ys[i]])
 
     if number_early_attempts and [the_xs[1], the_ys[1]] != [the_x_vector[0], the_x_vector[1]]:
         plot.annotate(f'X', [the_x_vector[0], the_x_vector[1]])
+    if len(the_xs) > 2 or number_early_attempts == False:
+        plot.annotate("*", [the_xs[-1], the_ys[-1]])
 
     plot.plot(the_xs, the_ys, color, label=s1.name)
 
@@ -101,14 +104,15 @@ def summary_simplex_to_graph(s1, number_early_attempts=False, color="r-", limit_
             if 1 <= i+1 <= 7:
                 if i == 2:
                     for iii in range(3):
-                        plot.annotate(f'#{iii+1}', [triangle_xs[iii], triangle_ys[iii]])
+                        plot.annotate(f'{iii+1}', [triangle_xs[iii], triangle_ys[iii]])
                 else:
-                    plot.annotate(f'#{i+1}', [triangle_xs[x_high_i], triangle_ys[x_high_i]])
+                    plot.annotate(f'{i+1}', [triangle_xs[x_high_i], triangle_ys[x_high_i]])
 
         # draw
         plot.plot(triangle_xs, triangle_ys, color, label=s1.name)
         if limit_steps == i:
-            return
+            break
+    plot.annotate("*", s1.gamma_x_value_history[-1][1])
 
 
 def gamma_to_graph(the_summary: ExecutionSummary, color="r-"):
@@ -129,7 +133,7 @@ def gamma_to_graph(the_summary: ExecutionSummary, color="r-"):
 
 if __name__ == '__main__':
 
-    LSP = '9999956'
+    LSP = '1813056'
     LSP_a = int(LSP[5])
     LSP_b = int(LSP[6])
 
@@ -171,14 +175,20 @@ if __name__ == '__main__':
     near_zero2 = 1e-16
     near_zero3 = 1e-6
     start_length = 0.09
-    gamma_step = 3.8
+    gamma_step = 3.8  # 3.8
     gradient_stop = near_zero2
-    stop_line = 1e-8
+    stop_line = 1e-8  # 1e-8
 
     x0 = [0, 0]
     x1 = [1, 1]
     xm = [LSP_a/10, LSP_b/10]
     xs = [x0, x1, xm]
+
+    print("X, f(X), gradf(X)")
+    for x in xs:
+        print(f"{x}, "
+              f"{fx(*x)}, "
+              f"{gradient_fx(x)}")
 
     xs_summary = []
     for x in xs:
@@ -225,7 +235,7 @@ if __name__ == '__main__':
     #                                                    alfa,
     #                                                    stop_line,
     #                                                    step_limit=1000)
-    #     print(f'\nNelder-Mead taškuose {x0}, {x1}, {xm}. alpha = {alfa}, epsilon = {gradient_stop}')
+    #     print(f'\nNelder-Mead taškuose {x0}, {x1}, {xm}. alpha = {alfa}, epsilon = {stop_line}')
     #     print(f'solution, fx, steps')
     #     for start_point, summaries in x_experiments:
     #         print(f'{summaries[2].solution}, {summaries[2].value}, {summaries[2].steps}')
